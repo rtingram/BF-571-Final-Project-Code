@@ -1,0 +1,579 @@
+---
+title: "HIV"
+author: "Anqi Dai"
+date: "4/8/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+options(stringsAsFactors = FALSE)
+#the packages
+require(ggplot2)
+require(tidyr)
+require(readr)
+require(dplyr)
+require(reshape2)
+```
+
+```{r}
+# write a function to process the files all at once!
+filenames <- list.files(path = '~/Downloads/571/act_p1', pattern = '*.tsv', full.names =  TRUE) #this return strings as the full path of the files
+list_file <- lapply(filenames, function(x) {read.delim(x, header = TRUE, skip = 1)})  #this already returns dataframes.
+names(list_file) <- substr(filenames, 36, 44) #using the substring to extract the names of the files
+
+#### the above code yield a list with each element being the data frame for the SNP data at specific time points
+
+```
+
+### The SNP frequency should be a trend of either fix or die out! The change in the same nt over time.
+
+```{r SNP_freq}
+# p17 region: 262-657
+# ! upper panel : 4 months, 5 years, 8 years(p1)(122, 1861, 2922)
+t4m <- list_file$`122_days.`[262:657, 1:4]
+t5y <- list_file$`1861_days`[262:657, 1:4]
+t8y <- list_file$`2922_days`[262:657, 1:4]
+
+# filter out the rank of the nt that has a snp(not the founder allele not 0 either)
+# observe the frequency of the same nt in the three time points
+# A
+t4m_a_nozero <- t4m[t4m$X..A != 0, ]
+t4m_a_nozero_order <- t4m_a_nozero[order(t4m_a_nozero$X..A, decreasing = TRUE), ]
+t4m_a_snp <- t4m_a_nozero_order[t4m_a_nozero_order$X..A < 700, ]
+t5y_a_snp <- t5y[rownames(t4m_a_snp),]
+t8y_a_snp <- t8y[rownames(t4m_a_snp),]
+
+#convert to frequency
+t4m_a_snp$rowsum <- apply(t4m_a_snp, 1, sum)
+t4m_a_snp$A_freq <- t4m_a_snp$X..A/t4m_a_snp$rowsum
+
+t5y_a_snp$rowsum <- apply(t5y_a_snp, 1, sum)
+t5y_a_snp$A_freq <- t5y_a_snp$X..A/t5y_a_snp$rowsum
+
+t8y_a_snp$rowsum <- apply(t8y_a_snp, 1, sum)
+t8y_a_snp$A_freq <- t8y_a_snp$X..A/t8y_a_snp$rowsum
+
+# the data frame of A frequency at each time
+a_freq123 <- data.frame(t4m_a_snp$A_freq, t5y_a_snp$A_freq, t8y_a_snp$A_freq)
+rownames(a_freq123) <- rownames(t4m_a_snp)
+a_freq123$position <- as.numeric(rownames(a_freq123))
+a_freq123_order <- a_freq123[order(a_freq123$position, decreasing =  FALSE),]
+colnames(a_freq123_order)[1:3] <- c('4 months', '5 years', '8 years')
+
+#----------------------------------------------------------------------
+#C
+t4m_c_nozero <- t4m[t4m$C != 0, ]
+t4m_c_nozero_order <- t4m_c_nozero[order(t4m_c_nozero$C, decreasing = TRUE), ]
+t4m_c_snp <- t4m_c_nozero_order[t4m_c_nozero_order$C < 700, ]
+t5y_c_snp <- t5y[rownames(t4m_c_snp),]
+t8y_c_snp <- t8y[rownames(t4m_c_snp),]
+
+#convert to frequency
+t4m_c_snp$rowsum <- apply(t4m_c_snp, 1, sum)
+t4m_c_snp$C_freq <- t4m_c_snp$C/t4m_c_snp$rowsum
+
+t5y_c_snp$rowsum <- apply(t5y_c_snp, 1, sum)
+t5y_c_snp$C_freq <- t5y_c_snp$C/t5y_c_snp$rowsum
+
+t8y_c_snp$rowsum <- apply(t8y_c_snp, 1, sum)
+t8y_c_snp$C_freq <- t8y_c_snp$C/t8y_a_snp$rowsum
+
+# the data frame of C frequency at each time
+c_freq123 <- data.frame(t4m_c_snp$C_freq, t5y_c_snp$C_freq, t8y_c_snp$C_freq)
+rownames(c_freq123) <- rownames(t4m_c_snp)
+c_freq123$position <- as.numeric(rownames(c_freq123))
+c_freq123_order <- c_freq123[order(c_freq123$position, decreasing =  FALSE),]
+colnames(c_freq123_order)[1:3] <- c('4 months', '5 years', '8 years')
+
+#----------------------------------------------------------------------
+#G
+t4m_g_nozero <- t4m[t4m$G != 0, ]
+t4m_g_nozero_order <- t4m_g_nozero[order(t4m_g_nozero$G, decreasing = TRUE), ]
+t4m_g_snp <- t4m_g_nozero_order[t4m_g_nozero_order$G < 5000, ]
+t5y_g_snp <- t5y[rownames(t4m_g_snp),]
+t8y_g_snp <- t8y[rownames(t4m_g_snp),]
+
+#convert to frequency
+t4m_g_snp$rowsum <- apply(t4m_g_snp, 1, sum)
+t4m_g_snp$G_freq <- t4m_g_snp$G/t4m_g_snp$rowsum
+
+t5y_g_snp$rowsum <- apply(t5y_g_snp, 1, sum)
+t5y_g_snp$G_freq <- t5y_g_snp$G/t5y_g_snp$rowsum
+
+t8y_g_snp$rowsum <- apply(t8y_g_snp, 1, sum)
+t8y_g_snp$G_freq <- t8y_g_snp$G/t8y_g_snp$rowsum
+
+# the data frame of G frequency at each time
+g_freq123 <- data.frame(t4m_g_snp$G_freq, t5y_g_snp$G_freq, t8y_g_snp$G_freq)
+rownames(g_freq123) <- rownames(t4m_g_snp)
+g_freq123$position <- as.numeric(rownames(g_freq123))
+g_freq123_order <- g_freq123[order(g_freq123$position, decreasing =  FALSE),]
+colnames(g_freq123_order)[1:3] <- c('4 months', '5 years', '8 years')
+
+#----------------------------------------------------------------------
+#T
+t4m_t_nozero <- t4m[t4m$T != 0, ]
+t4m_t_nozero_order <- t4m_t_nozero[order(t4m_t_nozero$T, decreasing = TRUE), ]
+t4m_t_snp <- t4m_t_nozero_order[t4m_t_nozero_order$T < 900, ]
+t5y_t_snp <- t5y[rownames(t4m_t_snp),]
+t8y_t_snp <- t8y[rownames(t4m_t_snp),]
+
+#convert to frequency
+t4m_t_snp$rowsum <- apply(t4m_t_snp, 1, sum)
+t4m_t_snp$T_freq <- t4m_t_snp$T/t4m_t_snp$rowsum
+
+t5y_t_snp$rowsum <- apply(t5y_t_snp, 1, sum)
+t5y_t_snp$T_freq <- t5y_t_snp$T/t5y_t_snp$rowsum
+
+t8y_t_snp$rowsum <- apply(t8y_t_snp, 1, sum)
+t8y_t_snp$T_freq <- t8y_t_snp$T/t8y_t_snp$rowsum
+
+# the data frame of T frequency at each time
+t_freq123 <- data.frame(t4m_t_snp$T_freq, t5y_t_snp$T_freq, t8y_t_snp$T_freq)
+rownames(t_freq123) <- rownames(t4m_t_snp)
+t_freq123$position <- as.numeric(rownames(t_freq123))
+t_freq123_order <- t_freq123[order(t_freq123$position, decreasing =  FALSE),]
+colnames(t_freq123_order)[1:3] <- c('4 months', '5 years', '8 years')
+
+#----------------------------------------------------------------------
+# combine them to one single data frame
+ac_df <- union(a_freq123_order, c_freq123_order)
+tg_df <- union(t_freq123_order, g_freq123_order)
+whole_df <- union(ac_df, tg_df)
+whole_df_order <- whole_df[order(whole_df$position, decreasing = FALSE), ]
+
+
+#ggplot 
+# after log transform the y axis, we can see the fix or die out thing happen very occasionally
+ggplot(whole_df_order, aes(x = position, y = whole_df_order$`4 months`)) +
+  geom_point(size = 5, aes(colour = position)) +
+  scale_y_log10()  +
+  scale_colour_gradientn(colours=rainbow(7))+
+  coord_cartesian(ylim = c(0.01, 1)) +
+  ggtitle('4 months') +
+  xlab('position(bp)') +
+  ylab('SNP frequency') +
+  theme(plot.title = element_text(size = rel(2)), legend.position = "bottom") + 
+  ggsave("~/Downloads/571/4months.png", width = 4, height = 4, dpi = 120)
+
+ggplot(whole_df_order, aes(x = position, y = whole_df_order$`5 years`)) +
+  geom_point(size = 5, aes(colour = position)) +
+  scale_y_log10()  +
+  scale_colour_gradientn(colours=rainbow(7))+
+  coord_cartesian(ylim = c(0.01, 1)) +
+  ggtitle('5 years') +
+  xlab('position(bp)') +
+  ylab('SNP frequency') +
+  theme(plot.title = element_text(size = rel(2)), legend.position = "bottom") + 
+  ggsave("~/Downloads/571/5years.png", width = 4, height = 4, dpi = 120)
+
+ggplot(whole_df_order, aes(x = position, y = whole_df_order$`8 years`)) +
+  geom_point(size = 5, aes(colour = position)) +
+  scale_y_log10()  +
+  scale_colour_gradientn(colours=rainbow(7))+
+  coord_cartesian(ylim = c(0.01, 1)) +
+  ggtitle('8 years') +
+  xlab('position(bp)') +
+  ylab('SNP frequency') +
+  theme(plot.title = element_text(size = rel(2)), legend.position = "bottom") + 
+  ggsave("~/Downloads/571/8years.png", width = 4, height = 4, dpi = 120)
+```
+
+
+# to plot the trajectories of SNP through the whole time
+
+```{r}
+#to subset each data frame to get only the ACGT columns and the p17 region
+p17 <- lapply(list_file, function(df) {
+  df[262:657, 1:4]
+})
+names(p17) <- names(list_file)#now p17 is the list with each element being the specific df for each time point
+
+######################prepare the df for melting
+t_whole_df_order<- as.data.frame(t(whole_df_order))
+t_whole_df_order$time <- c(0.3, 5, 8, '-')
+colnames(t_whole_df_order) <- t_whole_df_order[4, ]
+t_whole_df_order <- t_whole_df_order[1:3,]
+t_whole_df_order<- t_whole_df_order[,1:(ncol(t_whole_df_order)-1)]
+t_whole_df_order$time <- c(0.4,5,8)
+
+# trying to find a way to flag the transparency
+fac_fix <- factor()
+
+# to melt the sample df for plotting
+whole_d_melted <- melt(t_whole_df_order, id.vars  = 'time', na.rm = TRUE)
+colnames(whole_d_melted) <- c('Time(years)', 'Position(bp)', 'SNP frequency')
+
+#ggplot
+g_tra <- ggplot(whole_d_melted, aes(x=whole_d_melted$`Time(years)`, y=whole_d_melted$`SNP frequency`, color = whole_d_melted$`Position(bp)`) )
+
+g_tra + 
+  geom_path(size = 1.2) + 
+  scale_y_log10() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5))) +
+  coord_cartesian(ylim = c(0.01, 1)) +
+  ggtitle('SNP trajectories through time') +
+  xlab('Years since EDI') +
+  ylab('SNP frequency') +
+  ggsave("~/Downloads/571/traje3.png", width = 24, height = 24, dpi = 251)
+
+```
+
+#divergence
+
+```{r}
+#average divergence defined as the fraction of non-founder alleles in a sliding window of 300 bp was regressed against the estimated times since infection using a linear model without intercept.
+# this is to work on the original data frame of each time point
+
+# this function is to calculate the fraction of non-founder allels in a 300 bp window
+diver_300bp <- function(x) {
+   snp_num = sum(apply(x, 1, function(x) { sum(x)-max(x)}))
+   sum_row = sum(apply(x, 1, sum))
+   snp_num/sum_row
+}
+rownum <- 9060
+# split the data frame of each time point to 300 bp windows
+f_300 <- rep( 1: ceiling(rownum / 300),each = 300)[1:rownum ]
+split_files_p1 <- lapply(list_file, function(file) 
+  {split(file,f = f_300)})   #now each time point has been splitted to a bunch of 300 bp windows
+
+#to use the function diver_300bp on each of the time point
+#gotta figure out how to do this with something in the apply family
+
+p1_1 <- t(as.data.frame(lapply(split_files_p1$`122_days.`, diver_300bp)))
+p1_2 <- t(as.data.frame(lapply(split_files_p1$`562_days.`, diver_300bp)))
+p1_3 <- t(as.data.frame(lapply(split_files_p1$`1084_days`, diver_300bp)))
+p1_4 <- t(as.data.frame(lapply(split_files_p1$`1254_days`, diver_300bp)))
+p1_5 <- t(as.data.frame(lapply(split_files_p1$`1282_days`, diver_300bp)))
+p1_6 <- t(as.data.frame(lapply(split_files_p1$`1393_days`, diver_300bp)))
+p1_7 <- t(as.data.frame(lapply(split_files_p1$`1861_days`, diver_300bp)))
+p1_8 <- t(as.data.frame(lapply(split_files_p1$`2303_days`, diver_300bp)))
+p1_9 <- t(as.data.frame(lapply(split_files_p1$`2578_days`, diver_300bp)))
+p1_10 <- t(as.data.frame(lapply(split_files_p1$`2639_days`, diver_300bp)))
+p1_11 <- t(as.data.frame(lapply(split_files_p1$`2922_days`, diver_300bp)))
+p1_12 <- t(as.data.frame(lapply(split_files_p1$`2996_days`, diver_300bp)))
+
+p1_300bp_diver <- as.data.frame(t(data.frame(p1_1, p1_2, p1_3, p1_4, p1_5, p1_6, p1_7, p1_8, p1_9, p1_10, p1_11, p1_12))) #have to transform to dataframe after t()
+
+# to extract only the structural region, the enzymen region and the envelope region
+p1_300bp_diver_region <- as.data.frame(p1_300bp_diver[, c(2:8, 7:17, 21:30)])
+
+# to get the average for the structure region 
+p1_ave_struc <- as.data.frame(apply(p1_300bp_diver_region[, 1:7], 1 ,mean))
+colnames(p1_ave_struc) <- 'Structural'
+
+# to get the average for the enzyme region 
+p1_ave_enzym <- as.data.frame(apply(p1_300bp_diver_region[, 8:18], 1 ,mean))
+colnames(p1_ave_enzym) <- 'Enzymes'
+
+# to get the average for the envelope region 
+p1_ave_envelope <- as.data.frame(apply(p1_300bp_diver_region[, 19:28], 1 ,mean))
+colnames(p1_ave_envelope) <- 'Envelope'
+
+#to combine them to one single data frame
+p1_region_total <- data.frame(p1_ave_struc, p1_ave_enzym, p1_ave_envelope )
+
+# to melt the df for plotting
+p1_region_total$time <- round(c(122, 562, 1084, 1254, 1282, 1393, 1861, 2303, 2578, 2639, 2922, 2996) /365, digits = 1)
+p1_region_total_melted <- melt(p1_region_total, id.vars  = 'time', na.rm = TRUE)
+
+#ggplot to do the time since infection VS SNP frequency(color coded by genome position)
+
+ggplot(p1_region_total_melted, aes(x=time, y=value, color = variable)) +
+  geom_point(size = 2.5) +
+  stat_smooth(method = 'lm', aes(fill = variable), alpha = 0.2) +
+  ggtitle('Year VS Divergence(linear regression over time)') +
+  xlab('year since infection') +
+  ylab('divergence') +
+  theme_bw()
+
+
+ggplot(p1_region_total_melted, aes(x=time, y=value, color = variable)) +
+  geom_point(size = 2.5) +
+  geom_line(size = 1.5) +
+  ggtitle('Year VS Divergence') +
+  xlab('year since infection') +
+  ylab('divergence') +
+  theme_bw()
+  
+```
+
+####The confidence interval for the Envelope region in the linear regression plot is pretty big, because we can see in the lower line plot that it doesn't follow a good linear relationship. Still, the huge jump in the divergence could be owing to the possibility that the enzyme genes revert back to the founder sequences to escape host immunity system. 
+
+
+
+
+# the DIVERSITY ####################################################################################
+
+# the functions to get the diversity
+
+```{r}
+#to streamline the process
+#first to get the full path of the files
+fileName <- function(x) {
+  list.files(path = paste('~/Downloads/571/act_p', x, sep = ''), pattern = '*.tsv', full.names =  TRUE)
+}
+
+patientFile1 <- function(filenames) {
+  listofFile = lapply(filenames, function(x) {read.delim(x, header = TRUE, skip = 1)}) 
+  names(listofFile) <- substr(filenames, 36, 44)
+  listofFile
+}
+
+patientFile2 <- function(filenames) {
+  listofFile = lapply(filenames, function(x) {read.delim(x, header = TRUE, skip = 1)}) 
+  names(listofFile) <- substr(filenames, 37, 44)
+  listofFile
+}
+
+#there is a difference between the slicing of the names of the files
+patientListFile <- function(num) {
+  if (num > 9) {
+    return(patientFile2(fileName(num)))
+  }
+  else {
+    return(patientFile1(fileName(num)))
+  }
+}
+
+#test the above function. yay!
+p11 <- patientListFile(11)
+
+#--------------------------------------------------------------------------------------
+#subset to get the p17 region
+p17subset <- function(listFile) {lapply(listFile, function(df) {df[262:657, 1:4]})}
+
+
+#to calculate the distance(fraction of non-founder allels)
+SNP_frac_row <- function(listFile) {lapply(listFile, function(df) {colMeans(as.data.frame(apply(df, 1, function(x) {(sum(x)-max(x))/sum(x)})))})}
+
+#then to extract the time out
+extractTime <- function(listFile) {
+  as.integer(sapply(names(listFile), function(x) {
+  spl = strsplit(x, '_')[[1]]
+  spl[1]
+}))}
+
+#final function combine to a single data frame
+combineTime_frac <- function(time, frac) {
+  df = data.frame(time, ave_diver = as.numeric(frac))
+  df[order(df[,1], decreasing = FALSE),]
+}
+
+#test successful!
+testdf <- combineTime_frac(extractTime(p11), SNP_frac_row(p17subset(p11)))
+```
+
+```{r}
+#to get all diversity data frames in one list
+diversity_list <- lapply(list(1,2,3,5,6,8,9,10,11), function(x) {
+  df = combineTime_frac(extractTime(patientListFile(x)),    SNP_frac_row(p17subset(patientListFile(x))))
+  df$patient = as.factor(rep(x, length(patientListFile(x))))
+  df
+ })
+
+#finally the diversity df as a whole single df
+diversity_df <- tidyr::drop_na(dplyr::bind_rows(diversity_list))
+
+```
+
+```{r}
+#the ggplot part diversity
+
+g1 <- ggplot(diversity_df, aes(x= time, y = ave_diver, color = patient) )
+
+g1 + geom_point(size = 3) + 
+  geom_line(size = 1) + 
+  theme(plot.title = element_text(size = rel(1.5))) +
+  coord_cartesian(ylim = c(0.00, 0.035)) +
+  labs(
+    title = 'Average diversity in p17 for each patient',
+    x = 'Time from infection(days)',
+    y = 'diversity' ) +
+  ggsave("diveristy_p17.png")  
+```
+
+# the DIVERGENCE ################################################################################
+
+```{r}
+# divergence should be taking the founder sequence as the consensus all the time
+
+#the function to calculate the divergence SNP faction
+divergence_frac <- function(df1, otherdf) {
+  colmaxIndex <- colnames(df1)[max.col(df1,ties.method="first")]
+  diverg_frac = c()
+  for (i in 1:length(colmaxIndex)) {
+   diverg_frac[i] = (rowSums(otherdf[i,]) - otherdf[i,colmaxIndex[i]])/rowSums(otherdf[i,])
+  }
+  diverg_frac
+}
+
+#the function to get the average divergence distance(SNP fraction)
+SNP_divergence <- function(listFile) {
+  lapply(listFile, function(x) {
+  colMeans(as.data.frame(divergence_frac(listFile[[1]], x)))
+})
+}
+
+#test, yay! success
+testdf <- combineTime_frac(extractTime(patientListFile(1)), SNP_divergence(p17subset(patientListFile(1))))
+
+#to get all diversity data frames in one list(weighted! yay!)
+divergence_list <- lapply(list(1,2,3,5,6,8,9,10,11), function(x) {
+  df = combineTime_frac(extractTime(patientListFile(x)), SNP_divergence(p17subset(patientListFile(x))))
+  df$patient = as.factor(rep(x, length(patientListFile(x))))
+  df
+ })
+
+#finally the diversity df as a whole single df
+divergence_df <- drop_na(bind_rows(divergence_list))
+
+```
+
+```{r}
+#the ggplot divergence
+
+g2 <- ggplot(divergence_df, aes(x= time, y = ave_diver, color = patient) )
+
+g2 + geom_point(size = 3) + 
+  geom_line(size = 1) + 
+  theme(plot.title = element_text(size = rel(1.5))) +
+  coord_cartesian(ylim = c(0.00, 0.035)) +
+  labs(
+    title = 'Average divergence in p17 for each patient',
+    x = 'Time from infection(days)',
+    y = 'divergence' ) +
+  ggsave("divergence_p17.png") 
+```
+
+##### this shows that not only they are diverging away from the putative founding sequence, but  the between-sequences diversity increases as well.
+
+
+# repeat the process for gp120 region
+# diversity
+```{r}
+#subset to get the gp120 region
+gp120subset <- function(listFile) {lapply(listFile, function(df) {df[7758:8795, 1:4]})}
+
+#the diversity for all the patients in this region
+diversity_list_gp120 <- lapply(list(1,2,3,5,6,8,9,10,11), function(x) {
+  df = combineTime_frac(extractTime(patientListFile(x)),    SNP_frac_row(gp120subset(patientListFile(x))))
+  df$patient = as.factor(rep(x, length(patientListFile(x))))
+  df
+ })
+
+#finally the diversity df as a whole single df
+diversity_gp120_df <- tidyr::drop_na(dplyr::bind_rows(diversity_list_gp120))
+
+```
+
+```{r}
+#the ggplot part diversity
+
+g1 <- ggplot(diversity_gp120_df, aes(x= time, y = ave_diver, color = patient) )
+
+g1 + geom_point(size = 3) + 
+  geom_line(size = 1) + 
+  theme(plot.title = element_text(size = rel(1.5))) +
+  #coord_cartesian(ylim = c(0.00, 0.035)) +
+  labs(
+    title = 'Average diversity in gp120 for each patient',
+    x = 'Time from infection(days)',
+    y = 'diversity' ) +
+  ggsave("diveristy_gp120.png")  
+```
+
+
+# divergence
+```{r}
+#to get all diversity data frames in one list(weighted! yay!)
+divergence_list_gp120 <- lapply(list(1,2,3,5,6,8,9,10,11), function(x) {
+  df = combineTime_frac(extractTime(patientListFile(x)), SNP_divergence(gp120subset(patientListFile(x))))
+  df$patient = as.factor(rep(x, length(patientListFile(x))))
+  df
+ })
+
+#finally the diversity df as a whole single df
+divergence_gp120_df <- drop_na(bind_rows(divergence_list_gp120))
+
+```
+
+```{r}
+#the ggplot divergence
+
+g2 <- ggplot(divergence_gp120_df, aes(x= time, y = ave_diver, color = patient) )
+
+g2 + geom_point(size = 3) + 
+  geom_line(size = 1) + 
+  theme(plot.title = element_text(size = rel(1.5))) +
+  coord_cartesian(ylim = c(0.00, 0.03)) +
+  labs(
+    title = 'Average divergence in gp120 for each patient',
+    x = 'Time from infection(days)',
+    y = 'divergence' ) +
+  ggsave("divergence_gp120.png") 
+```
+
+#try to fuse them into one single data frame and plot with four facets
+
+```{r}
+divergence_gp120_df$region <- rep('gp120', nrow(divergence_gp120_df))
+divergence_df$region <- rep('p17', nrow(divergence_df))
+divergence_all <- bind_rows(divergence_gp120_df, divergence_df)
+divergence_all$type <- rep('divergence', nrow(divergence_all))
+
+diversity_gp120_df$region <- rep('gp120', nrow(diversity_gp120_df))
+diversity_df$region <- rep('p17', nrow(diversity_df))
+diversity_all <- bind_rows(diversity_gp120_df, diversity_df)
+diversity_all$type <- rep('diversity', nrow(diversity_all))
+
+total_allfour <- bind_rows(divergence_all, diversity_all)
+only_p17 <- total_allfour[c(207:276, 69:138),]
+
+#ggplot
+g6 <- ggplot(only_p17, aes(x= time, y = ave_diver, color = patient) )
+
+g6 + geom_point(size = 3) + 
+  geom_line(size = 1) + 
+  facet_grid( . ~ type) +
+  theme(plot.title = element_text(size = rel(1.5))) +
+  coord_cartesian(ylim = c(0.00, 0.035)) +
+  labs(
+   title = 'Divergence & Diversity in p17 for each patient',
+    x = 'Time from infection(days)',
+    y = 'frequency' ) +
+  ggsave("diver_p17.png") 
+```
+
+```{r}
+#reorganize the whole_df_order
+t1 <- whole_df_order[, c(1,4)]
+t2 <- whole_df_order[, c(2,4)]
+t3 <- whole_df_order[, c(3,4)]
+colnames(t1)[1] <- 'frequency'
+colnames(t2)[1] <- 'frequency'
+colnames(t3)[1] <- 'frequency'
+t1$days <- rep('4 months', nrow(t1))
+t2$days <- rep('5 years', nrow(t2))
+t3$days <- rep('8 years', nrow(t3))
+whole <- bind_rows(t1, t2, t3)
+
+#ggplot
+ggplot(whole, aes(x = position, y = frequency)) +
+  geom_point(size = 5, aes(colour = position)) +
+  scale_y_log10()  +
+  facet_grid(. ~ days) +
+  scale_colour_gradientn(colours=rainbow(7))+
+  coord_cartesian(ylim = c(0.01, 1)) +
+  ggtitle('SNP frequencies dynamics') +
+  xlab('position(bp)') +
+  ylab('SNP frequency') +
+  theme(plot.title = element_text(size = rel(2)), legend.position = "bottom") + 
+  ggsave("snp_dynamics.png", width = 4, height = 4)
+```
+
